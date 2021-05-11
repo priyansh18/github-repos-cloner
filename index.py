@@ -3,7 +3,6 @@ import requests
 import os
 import sys
 
-
 def scrapCurrentPageReposLink(url):
     response = requests.get(url)
     data = response.content
@@ -52,10 +51,9 @@ def cloneRepos(reposLinks):
 
 if(__name__ == "__main__"):
     username = sys.argv[1]
-
     reposLinks = scrapGithubReposLink(username)
-    print(reposLinks, len(reposLinks))
-
-    print("Total Repos Found are {}")
-    print("These Repos Will be cloned {}")
-    # cloneRepos(reposLinks)
+    print("Total Repos Found are {}".format(len(reposLinks)))
+    print("Repos To be cloned :")
+    for repoLink in reposLinks:
+        print(repoLink)
+    cloneRepos(reposLinks)
