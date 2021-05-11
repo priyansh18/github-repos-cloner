@@ -1,38 +1,61 @@
 from bs4 import BeautifulSoup
 import requests
 import os
+import sys
 
-username = 'priyansh18'
-url = "https://github.com/{}?tab=repositories".format(username)
-allLinks = []
-isLastPage = False
 
-while True:
-    if isLastPage:
-        break
+def scrapCurrentPageReposLink(url):
     response = requests.get(url)
     data = response.content
-    soup = BeautifulSoup(data,'html.parser')
-    signup = soup.find('a',{'data-target':'nux-signup-candidates.signupAction'})
-    if signup.text == 'Sign up':
-        all_repos = soup.find_all('h3',{'class':'wb-break-all'})
-        for repos in all_repos:
-            link = repos.find('a',{'itemprop':'name codeRepository'})
-            itemlink = "https://github.com" + link.get('href')
-            allLinks.append(itemlink)
-    else:
-        all_repos = soup.find_all('div',{'class':'private source'})
-        for repos in all_repos:
-            link = repos.find('a',{'itemprop':'name codeRepository'})
-            itemlink = "https://github.com" + link.get('href')
-            allLinks.append(itemlink)
+    soup = BeautifulSoup(data, 'html.parser')
 
-        
-    buttonDiv = soup.find_all('a',{'class':'BtnGroup-item'})
+    reposLinks = []
+    reposAnchors = soup.find_all('a', {'itemprop': 'name codeRepository'})
+    for anchor in reposAnchors:
+        reposLinks.append("https://github.com" + anchor.get('href'))
+
+    nextpageURL = ""
+    buttonDiv = soup.find_all('a', {'class': 'BtnGroup-item'})
     for divs in buttonDiv:
-        if (divs.text == 'Next'):
-            url = divs.get('href')
+        if (divs.text.title() == 'Next'):
+            nextpageURL = divs.get('href')
+        elif(divs.text.title() == 'Previous'):
+            continue
         else:
-            isLastPage = True
             break
-    
+
+    return (reposLinks, nextpageURL)
+
+
+def scrapGithubReposLink(username):
+    repos = []
+    url = "https://github.com/{}?tab=repositories".format(username)
+
+    while True:
+        (currentPageRepos, nextPageURL) = scrapCurrentPageReposLink(url)
+
+        repos.extend(currentPageRepos)
+        url = nextPageURL
+
+        if not url:
+            break
+
+    return repos
+
+
+def cloneRepos(reposLinks):
+    os.chdir('../')
+    for repoLink in reposLinks:
+        print("========\nCloning the {}\n==============".format(repoLink))
+        os.system("git clone {}".format(repoLink))
+
+
+if(__name__ == "__main__"):
+    username = sys.argv[1]
+
+    reposLinks = scrapGithubReposLink(username)
+    print(reposLinks, len(reposLinks))
+
+    print("Total Repos Found are {}")
+    print("These Repos Will be cloned {}")
+    # cloneRepos(reposLinks)
